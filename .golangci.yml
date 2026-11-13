@@ -1,0 +1,212 @@
+version: "2"
+
+linters:
+  default: none
+  enable:
+    - govet
+    - staticcheck
+    - intrange
+    - copyloopvar
+    - usestdlibvars
+    - forbidigo
+    - ineffassign
+    - unused
+    - mirror
+    - gosec
+    - errorlint
+    - nilerr
+    - perfsprint
+    - thelper
+    - tparallel 
+    - bodyclose
+    - noctx
+    - contextcheck
+    - funlen
+    - gocognit
+    - nestif
+    - lll
+    - revive
+    - modernize
+    - gocritic
+    - unparam
+    - wastedassign
+    - sloglint
+    - nolintlint
+    - depguard
+    - containedctx
+    - unconvert
+    - dupl
+    - reassign
+    - canonicalheader
+    - prealloc
+    - gocheckcompilerdirectives
+    - asciicheck
+    - bidichk
+    - asasalint
+    - fatcontext
+    - exptostd
+    - makezero
+    - recvcheck
+    - usetesting
+  settings:
+    contextcheck:
+      check-inherited-context: true
+    govet:
+      enable:
+        - lostcancel
+        - nilness
+        - unreachable
+        - printf
+      disable:
+        - shadow
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+      allow-unused: false
+    unparam:
+      check-exported: true
+    gocritic:
+      enabled-checks:
+        - equalFold 
+        - stringXbytes
+        - emptyStringTest
+        - rangeValCopy
+    staticcheck:
+      checks: ["all", "-ST1000", "-ST1005", "-S1028"]  # 豁免包注释要求与错误字符串大小写等样式规则，保留全部 SA 系列核心分析
+    gocognit:
+      min-complexity: 15
+    nestif:
+      min-complexity: 4
+    lll:
+      line-length: 120
+      tab-width: 1
+    funlen:
+      lines: 120
+      statements: 80
+      ignore-comments: true
+    revive:
+      rules:
+        - name: exported
+          disabled: true
+        - name: package-comments
+          disabled: true
+        - name: blank-imports
+          disabled: false
+        - name: context-as-argument
+          disabled: false
+        - name: dot-imports
+          disabled: false
+        - name: early-return
+          disabled: false
+        - name: error-naming
+          disabled: false
+    gosec:
+      excludes:
+        - G104 # 忽略未处理 error 的告警
+        - G204 # 允许 CLI 核心受控执行 docker 等子进程
+        - G304 # 允许 CLI 读取入参指定的配置文件
+        - G301 # 允许用 0755 创建用户可见的输出目录
+        - G302 # 允许 0750 / 0640 资产目录权限
+        - G703 # 允许在 ValidateRoot 后进行路径 stat/lstat
+        - G110 # 允许解压自检流
+        - G122 # 允许已校验临时目录的 WalkDir 回调打开文件
+    
+    forbidigo:
+      forbid:
+        # --- 1. 比较器治理 ---
+        - pattern: 'strings\.Compare'
+          msg: "【现代化规范】禁止使用 strings.Compare。普通比较请用 == 或 <，切片排序三向比较请用 cmp.Compare。"
+
+        # --- 2. 排序与集合现代化 (Go 1.21+) ---
+        - pattern: 'sort\.(Slice|SliceStable|Strings|Ints|Float64s)'
+          msg: "【现代化规范】禁止使用旧版 sort.*。请全面替换为泛型标准库 slices.Sort、slices.SortFunc 或 slices.SortStableFunc。"
+        
+        - pattern: 'sort\.(SearchStrings|SearchInts|SearchFloat64s)'
+          msg: "【现代化规范】禁止使用旧版 sort.Search*。请替换为 slices.BinarySearch 或 slices.BinarySearchFunc。"
+        # --- 3. 彻底杜绝 io/ioutil (Go 1.16+) ---
+        - pattern: 'ioutil\..*'
+          msg: "【现代化规范】io/ioutil 早已废弃。读写文件请用 os.ReadFile/os.WriteFile，流读取请用 io.ReadAll，临时文件请用 os.CreateTemp。"
+
+        # --- 4. 消除无序的裸原子操作 (Go 1.19+) ---
+        - pattern: 'sync/atomic\.(Load|Store|Add|Swap|CompareAndSwap)(Int32|Int64|Uint32|Uint64|Uintptr)'
+          msg: "【现代化规范】建议使用强类型原子封装（如 atomic.Int64, atomic.Bool, atomic.Uint64），避免裸指针与内存未对齐问题。"
+
+        # --- 5. 现代切片与比较器治理 (强化 Go 1.21+ slices) ---
+        - pattern: 'reflect\.DeepEqual'
+          msg: "【现代化规范】基础切片等值比较请优先使用标准库泛型 slices.Equal 或 slices.EqualFunc；复杂结构/嵌套类型断言推荐使用 github.com/google/go-cmp/cmp。"
+        
+        - pattern: 'fmt\.Print(ln|f)?'
+          msg: "【分层规范】领域层禁止直接使用 fmt.Print*。请统一通过注入的 io.Writer (s.out/s.errOut) 输出。"
+
+        - pattern: 'os\.Exit'
+          msg: "【架构规范】仅允许在 main.go 中调用 os.Exit，业务包内请返回 error"
+
+        - pattern: 'os\.(Getenv|LookupEnv)'
+          msg: "【配置规范】领域与业务层禁止直接读取宿主环境变量 (os.Getenv/LookupEnv)。配置必须在启动/装配层统一读取并注入专有结构体，杜绝隐式环境依赖并保障机密脱敏。"
+
+        - pattern: '^time\.Sleep$'
+          msg: "【鲁棒性规范】非测试代码中禁止直接调用 time.Sleep，请结合 context.AfterFunc 或定时器实现可中断等待"
+
+        - pattern: '^time\.After$'
+          msg: "【鲁棒性规范】非测试代码禁止直接使用 time.After，避免长期常驻下 Timer 延迟回收，请使用显式 time.NewTimer 并 defer Stop()"
+
+        - pattern: 'slog\.SetDefault'
+          msg: "【并发与架构规范】禁止使用 slog.SetDefault。避免组件间或多用例并行 (t.Parallel) 时发生全局数据竞态，请通过显式参数或 Context 传递 Logger"
+
+        - pattern: '^time\.Tick$'
+          msg: "【鲁棒性规范】非测试代码禁止直接使用 time.Tick（底层 Ticker 无法回收导致内存泄露）。请使用显式 time.NewTicker 并配合 defer ticker.Stop()。"
+
+        - pattern: '^(print|println)$'
+          msg: "【分层与调试规范】禁止在正式代码中使用 Go 内置 print/println。格式化输出请使用标准库 fmt 或结构化日志 slog，领域层请注入 io.Writer。"
+
+        - pattern: '^context\.TODO$'
+          msg: "【上下文规范】业务代码中禁止留存 context.TODO() 临时占位符。必须透传调用链 context 或在顶层显式使用 context.Background()。"
+
+    errorlint:
+      errorf: true
+      asserts: true
+      comparison: true
+    sloglint:
+      no-mixed-args: true
+      context: scope
+      static-msg: true
+      key-naming-case: snake
+      error-key: "error"
+    depguard:
+      rules:
+        prevent_unmaintained_packages:
+          list-mode: lax
+          files:
+            - $all
+            - "!$test"
+          deny:
+            - pkg: "syscall"
+              desc: "syscall 已冻结，系统级底层调用请使用 golang.org/x/sys/unix"
+            - pkg: "io/ioutil"
+              desc: "io/ioutil 自 Go 1.16 起已废弃，文件操作使用 os，IO 流操作使用 io"
+            - pkg: "reflect"
+              desc: "【架构防腐】业务与执行引擎严禁引入 reflect（优先强类型与泛型）；仅模板求值/通用编解码等动态基础设施允许使用 //nolint:depguard 并附带理由注释"
+            - pkg: "math/rand$"
+              desc: "math/rand 存在全局互斥锁瓶颈，请使用 math/rand/v2"
+    reassign:
+      patterns:
+        - '.*'
+  exclusions:
+    rules:
+      # 测试代码放宽：只关注正确性，不强制复杂度/行长/重复度指标
+      - path: '.*_test\.go$'
+        linters: [noctx, gosec, funlen, revive, gocognit, nestif, lll, dupl, prealloc]
+      - path: '.*_test\.go$'
+        text: '【鲁棒性规范】'
+        linters: [forbidigo]
+      - path: '.*_test\.go$'
+        text: '【现代化规范】'
+        linters: [forbidigo]
+      # 仅入口包可调用 os.Exit
+      - path: 'cmd/.*main\.go$'
+        text: '【架构规范】仅允许在 main\.go 中调用 os\.Exit'
+        linters: [forbidigo]
+      # 入口层本就使用 fmt.Fprintf 写 stdout/stderr，这与注入 io.Writer 的规范一致
+      - path: 'cmd/'
+        text: '【分层规范】'
+        linters: [forbidigo]
