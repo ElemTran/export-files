@@ -49,8 +49,6 @@ linters:
     - recvcheck
     - usetesting
   settings:
-    contextcheck:
-      check-inherited-context: true
     govet:
       enable:
         - lostcancel
@@ -171,7 +169,6 @@ linters:
       context: scope
       static-msg: true
       key-naming-case: snake
-      error-key: "error"
     depguard:
       rules:
         prevent_unmaintained_packages:

@@ -222,11 +222,10 @@ func TestEmptyFile(t *testing.T) {
 	}
 }
 
-func TestNamesWithSpacesNewlinesAndUnicode(t *testing.T) {
+func TestNamesWithSpacesAndUnicode(t *testing.T) {
 	dir := t.TempDir()
 	writeFile(t, filepath.Join(dir, "a b.txt"), "hi\n")
 	writeFile(t, filepath.Join(dir, "中文 目录", "文 件.go"), "package x\n")
-	writeFile(t, filepath.Join(dir, "new\nline.txt"), "x\n")
 
 	got, _, err := export(t, dir, Options{NoIgnore: true}, ".")
 	if err != nil {
@@ -235,11 +234,27 @@ func TestNamesWithSpacesNewlinesAndUnicode(t *testing.T) {
 	for _, want := range []string{
 		"## a b.txt\n```\nhi\n```\n\n",
 		"## 中文 目录/文 件.go\n```go\npackage x\n```\n\n",
-		"## new\nline.txt\n```\nx\n```\n\n",
 	} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("输出缺少:\n%q\n完整输出:\n%q", want, got)
 		}
+	}
+}
+
+func TestNameWithNewline(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Windows 不允许文件名包含换行")
+	}
+	dir := t.TempDir()
+	writeFile(t, filepath.Join(dir, "new\nline.txt"), "x\n")
+
+	got, _, err := export(t, dir, Options{NoIgnore: true}, ".")
+	if err != nil {
+		t.Fatalf("Run 返回错误: %v", err)
+	}
+	want := "## new\nline.txt\n```\nx\n```\n\n"
+	if !strings.Contains(got, want) {
+		t.Fatalf("输出缺少:\n%q\n完整输出:\n%q", want, got)
 	}
 }
 
