@@ -1,5 +1,8 @@
 # export-files
 
+[![CI](https://github.com/ElemTran/export-files/actions/workflows/ci.yml/badge.svg)](https://github.com/ElemTran/export-files/actions/workflows/ci.yml)
+[![Release](https://github.com/ElemTran/export-files/actions/workflows/release.yml/badge.svg)](https://github.com/ElemTran/export-files/actions/workflows/release.yml)
+
 把目录 / 文件内容导出成 Markdown，方便贴给 LLM 阅读。Go 单模块命令行工具，
 用法与输出格式兼容原 bash 版本，并修掉了原脚本的文件名、二进制判定与忽略规则缺陷。
 
