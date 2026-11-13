@@ -144,11 +144,13 @@ internal/exporter/
 ## 发布
 
 推送 `v*` 标签即触发 Release 工作流，构建 Linux / macOS / Windows 的 amd64 与 arm64 产物，
-每个平台同时提供**归档包**（`tar.gz` / `zip`，内含二进制 + README，Unix 归档可复现）与
-**裸二进制**（下载即可运行），另有 `sha256sums.txt`，并创建 GitHub Release：
+每个平台同时提供两种形态，另有 `sha256sums.txt`，并创建 GitHub Release：
+
+- **归档包**：`export-files_<版本>_<os>_<arch>.tar.gz` / `.zip`，内含二进制与 README，Unix 归档可复现；
+- **裸二进制**：`export-files-<os>-<arch>` / `export-files-windows-<arch>.exe`，下载即可运行（无需解压）。
 
 ```console
-git tag v0.1.0 && git push origin v0.1.0
+git tag v0.1.1 && git push origin v0.1.1
 ```
 
 CI（`.github/workflows/ci.yml`）在每次 push / PR 时跑 `gofmt`、`go vet`、`golangci-lint`、
