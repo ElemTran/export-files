@@ -41,13 +41,14 @@ jobs:
           cp README.md "stage/${name}/"
           if [ -f LICENSE ]; then cp LICENSE "stage/${name}/"; fi
           mkdir -p dist
+          raw="export-files-${GOOS}-${GOARCH}"
           if [ "$GOOS" = "windows" ]; then
             (cd stage && zip -q -r "../dist/${name}.zip" "${name}")
-            cp "stage/${name}/${bin}" "dist/${name}.exe"
+            cp "stage/${name}/${bin}" "dist/${raw}.exe"
           else
             (cd stage && tar -czf "../dist/${name}.tar.gz" \
               --sort=name --mtime=@0 --owner=0 --group=0 --numeric-owner "${name}")
-            cp "stage/${name}/${bin}" "dist/${name}"
+            cp "stage/${name}/${bin}" "dist/${raw}"
           fi
           ls -l dist
 
